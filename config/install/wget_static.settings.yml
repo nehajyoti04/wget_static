@@ -1,0 +1,6 @@
+wget_static_success: 0
+wget_static_success_message: 'Operation Successfully Completed'
+wget_static_command: /usr/local/bin/wget
+wget_static_enable_wget_log: false
+wget_static_cmd_availability: true
+wget_static_success_redirect: '<front>'

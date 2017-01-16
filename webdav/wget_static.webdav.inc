@@ -15,9 +15,9 @@ function _wget_static_webdav_delete_req_cmd($form_state, $folder) {
  * Creates certificates cmd.
  */
 function _wget_static_webdav_cert_cmd($form_state) {
-  $pem = drupal_realpath(file_load($form_state['values']['pem'])->uri);
+  $pem = \Drupal::service("file_system")->realpath(file_load($form_state['values']['pem'])->uri);
   if (preg_match("/.pem\z/", $pem)) {
-    $crt = drupal_realpath(file_load($form_state['values']['cert'])->uri);
+    $crt = \Drupal::service("file_system")->realpath(file_load($form_state['values']['cert'])->uri);
     return "--cert " . $pem . ":'" . $form_state['values']['passph'] . "' --cacert " . $crt . " ";
   }
   elseif (preg_match("/.p12\z/", $pem)) {

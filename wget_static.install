@@ -10,7 +10,7 @@
 function wget_static_requirements($phase) {
   $requirements = array();
   // Ensure translations don't break during installation.
-  $t = get_t();
+  $t = 't';
 
   if ($phase == 'install') {
     // Shell Execution access.
@@ -36,7 +36,7 @@ function wget_static_requirements($phase) {
       'description' => $t('Wget Static module needs commandline access to wget application.'),
     );
     if (!$wget) {
-      variable_set('wget_static_cmd_availability', FALSE);
+      \Drupal::configFactory()->getEditable('wget_static.settings')->set('wget_static_cmd_availability', FALSE)->save();
       $requirements['wget']['severity'] = REQUIREMENT_WARNING;
       $requirements['wget']['value'] = $t('Command Disabled for Web User');
     }
@@ -60,15 +60,15 @@ function _wget_static_isenabled($func) {
  * Implements hook_uninstall().
  */
 function wget_static_uninstall() {
-  variable_del('wget_static_cmd_availability');
-  variable_del('wget_static_command');
-  variable_del('wget_static_content_tab_title');
-  variable_del('wget_static_content_tab_description');
-  variable_del('wget_static_settings_tab_title');
-  variable_del('wget_static_settings_tab_description');
-  variable_del('wget_static_success');
-  variable_del('wget_static_success_message');
-  variable_del('wget_static_success_redirect');
-  variable_del('wget_static_enable_wget_log');
-  variable_del('wget_static_save_download');
+  \Drupal::config('wget_static.settings')->clear('wget_static_cmd_availability')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_command')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_content_tab_title')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_content_tab_description')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_settings_tab_title')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_settings_tab_description')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_success')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_success_message')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_success_redirect')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_enable_wget_log')->save();
+  \Drupal::config('wget_static.settings')->clear('wget_static_save_download')->save();
 }

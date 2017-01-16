@@ -1,8 +1,5 @@
 <?php
-/**
- * @file
- * Recursively ZIP / Compress a file / folder.
- */
+namespace Drupal\wget_static;
 
 /**
  * Recursivezip class.

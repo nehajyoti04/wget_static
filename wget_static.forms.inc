@@ -10,13 +10,13 @@
 function wget_static_page_callback($form_type) {
   switch ($form_type) {
     case 'node':
-      return drupal_get_form('wget_static_form', 'node');
+      return \Drupal::formBuilder()->getForm('wget_static_form', 'node');
 
     case 'path':
-      return drupal_get_form('wget_static_form', 'path');
+      return \Drupal::formBuilder()->getForm('wget_static_form', 'path');
 
     case 'website':
-      return drupal_get_form('wget_static_form', 'website');
+      return \Drupal::formBuilder()->getForm('wget_static_form', 'website');
 
     default:
       return drupal_not_found();
@@ -39,24 +39,40 @@ function wget_static_form($form, &$form_state, $form_type) {
     $form['wget_static'] = array(
       '#type' => 'vertical_tabs',
     );
-    $form['wget_static_content'] = array(
+    // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+// @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+$form['wget_static_content'] = array(
       '#type' => 'fieldset',
-      '#title' => variable_get('wget_static_content_tab_title', t('Select Content')),
+      '#title' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_title'),
       '#collapsible' => TRUE,
       '#group' => 'wget_static',
-      '#description' => variable_get('wget_static_content_tab_description', t('Select contents for static HTML generation')),
+      '#description' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_description'),
     );
 
     $wget_static_content_form = '_wget_static_' . $form_type . '_contentform';
     $wget_static_content_form($form, $form_state);
   }
 
-  $form['wget_static_settings'] = array(
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+// @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+$form['wget_static_settings'] = array(
     '#type' => 'fieldset',
-    '#title' => variable_get('wget_static_settings_tab_title', t('Settings')),
+    '#title' => \Drupal::config('wget_static.settings')->get('wget_static_settings_tab_title'),
     '#collapsible' => TRUE,
     '#group' => 'wget_static',
-    '#description' => variable_get('wget_static_settings_tab_description', t('Settings for static HTML generation')),
+    '#description' => \Drupal::config('wget_static.settings')->get('wget_static_settings_tab_description'),
   );
 
   _wget_static_wget_options($form, $form_state);
@@ -70,7 +86,7 @@ function wget_static_form($form, &$form_state, $form_type) {
  */
 function _wget_static_node_contentform(&$form, &$form_state) {
   // Access Query parameters.
-  $query_params = drupal_get_query_parameters();
+  $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters();
   $default = isset($query_params['nid']) ? $query_params['nid'] : NULL;
   $node = _wget_static_verify_nid_parameter($default);
   $form['wget_static_content']['content_type'] = array(
@@ -140,7 +156,7 @@ function _wget_static_getcontent($content_type) {
     ->execute()
     ->fetchCol();
   foreach ($nids as $n) {
-    $node = node_load($n);
+    $node = \Drupal::entityManager()->getStorage('node')->load($n);
     $node_array[$n] = $node->title;
   }
   return $node_array;
@@ -151,7 +167,7 @@ function _wget_static_getcontent($content_type) {
  */
 function _wget_static_path_contentform(&$form, &$form_state) {
   // Access Query parameters.
-  $query_params = drupal_get_query_parameters();
+  $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters();
   $default = isset($query_params['url']) ? $query_params['url'] : NULL;
   $form['wget_static_content']['path'] = array(
     '#type' => 'textfield',
@@ -167,7 +183,7 @@ function _wget_static_path_contentform(&$form, &$form_state) {
  * Validates Internal Path.
  */
 function wget_static_path_validate($element, &$form_state, $form) {
-  if (!(!empty($element['#value']) && drupal_valid_path(drupal_get_normal_path($element['#value'])) && !url_is_external($element['#value']))) {
+  if (!(!empty($element['#value']) && \Drupal::service("path.validator")->isValid(drupal_get_normal_path($element['#value'])) && !\Drupal\Component\Utility\UrlHelper::isExternal($element['#value']))) {
     form_error($element, t('Please enter valid internal path.'));
   }
 }
@@ -391,7 +407,7 @@ function _wget_static_wget_options(&$form, &$form_state) {
     '#description' => t('Specify whether the robots is to be respected by Wget.'),
     '#default_value' => TRUE,
   );
-  if (user_access('wget use supercmd')) {
+  if (\Drupal::currentUser()->hasPermission('wget use supercmd')) {
     $form['wget_static_settings']['wget']['supercmd'] = array(
       '#type' => 'textfield',
       '#title' => t('Specify wget options directly other than provided ones.'),
@@ -412,7 +428,11 @@ function _wget_static_final_settings(&$form, &$form_state) {
     ),
   );
 
-  foreach (variable_get('wget_static_save_download', array('download' => 'download')) as $key => $value) {
+  // @FIXME
+// Could not extract the default value because it is either indeterminate, or
+// not scalar. You'll need to provide a default value in
+// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+foreach (\Drupal::config('wget_static.settings')->get('wget_static_save_download') as $key => $value) {
     if ($value) {
       $form['wget_static_settings']['final']['#options'][$key] = ucfirst($key);
     }
@@ -593,7 +613,7 @@ function _wget_static_final_settings(&$form, &$form_state) {
       'digest' => t('Digest'),
     ),
   );
-  if (user_access('wget use supercmd')) {
+  if (\Drupal::currentUser()->hasPermission('wget use supercmd')) {
     $form['wget_static_settings']['webdav']['advanced_options']['curl'] = array(
       '#type' => 'textfield',
       '#title' => t('Direct Curl Options'),
@@ -636,7 +656,7 @@ function _wget_static_verify_nid_parameter($default) {
     return FALSE;
   }
   if (is_numeric($default)) {
-    $node = node_load($default);
+    $node = \Drupal::entityManager()->getStorage('node')->load($default);
     if ($node) {
       return array(
         'nid' => $node->nid,
@@ -684,12 +704,15 @@ function wget_static_form_submit(&$form, &$form_state) {
       }
   }
 
-  if (variable_get('wget_static_success', 0)) {
-    $form_state['redirect'] = url(variable_get('wget_static_success_redirect', '<front>'), array('absolute' => TRUE));
+  if (\Drupal::config('wget_static.settings')->get('wget_static_success')) {
+    // @FIXME
+// url() expects a route name or an external URI.
+// $form_state['redirect'] = url(variable_get('wget_static_success_redirect', '<front>'), array('absolute' => TRUE));
+
   }
   else {
     $form_state['rebuild'] = TRUE;
-    drupal_set_message(variable_get('wget_static_success_message', 'Operation Successfully Completed'), 'status', FALSE);
+    drupal_set_message(\Drupal::config('wget_static.settings')->get('wget_static_success_message'), 'status', FALSE);
   }
 }
 
@@ -792,13 +815,22 @@ function _wget_static_build_options($form_state) {
 function _wget_static_build_url($values) {
   switch ($values['wget_static_of']) {
     case 'node':
-      return url('node/' . $values['nid'], array('absolute' => TRUE));
+      // @FIXME
+// url() expects a route name or an external URI.
+// return url('node/' . $values['nid'], array('absolute' => TRUE));
+
 
     case 'path':
-      return url($values['path'], array('absolute' => TRUE));
+      // @FIXME
+// url() expects a route name or an external URI.
+// return url($values['path'], array('absolute' => TRUE));
+
 
     case 'website':
-      return url('', array('absolute' => TRUE));
+      // @FIXME
+// url() expects a route name or an external URI.
+// return url('', array('absolute' => TRUE));
+
   }
 }
 
@@ -807,7 +839,7 @@ function _wget_static_build_url($values) {
  */
 function _wget_static_build_command($options, $url, $temp_dir, $wget_dir) {
   $wget = trim(shell_exec("which wget"));
-  $wget = ($wget) ? $wget : variable_get('wget_static_command', '/usr/local/bin/wget');
+  $wget = ($wget) ? $wget : \Drupal::config('wget_static.settings')->get('wget_static_command');
   $cmd = $wget . " ";
   foreach ($options as $option) {
     if ($option['use']) {
@@ -827,10 +859,10 @@ function _wget_static_generate_static_html($temp_dir, $wget_dir, $form_state) {
   $wget_cmd = _wget_static_build_command($wget_options, $wget_url, $temp_dir, $wget_dir);
   file_unmanaged_delete_recursive($temp_dir . "/wget");
   // Check for debug mode.
-  if (variable_get('wget_static_enable_wget_log', FALSE)) {
+  if (\Drupal::config('wget_static.settings')->get('wget_static_enable_wget_log')) {
     $log = shell_exec($wget_cmd . " 2>&1");
-    watchdog('wget_static', '<pre> @log </pre>', array('@log' => $log), WATCHDOG_NOTICE, 'link');
-    watchdog('wget_static', 'wget command built: @cmd', array('@cmd' => $wget_cmd), WATCHDOG_NOTICE, 'link');
+    \Drupal::logger('wget_static')->notice('<pre> @log </pre>', array('@log' => $log));
+    \Drupal::logger('wget_static')->notice('wget command built: @cmd', array('@cmd' => $wget_cmd));
   }
   else {
     shell_exec($wget_cmd);
@@ -914,7 +946,7 @@ function _wget_static_ftp($temp_dir, $wget_dir, $form_state, $timestamp) {
 function _wget_static_webdav($temp_dir, $wget_dir, $form_state, $timestamp) {
   // *** Include the class.
   include_once 'webdav/wget_static.webdav.inc';
-  $debug_mode = variable_get('wget_static_enable_wget_log', NULL);
+  $debug_mode = \Drupal::config('wget_static.settings')->get('wget_static_enable_wget_log');
   $process = array();
   $cert = "";
   if ($form_state['values']['webdav_tfa']) {

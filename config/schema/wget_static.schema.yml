@@ -1,0 +1,16 @@
+wget_static.settings:
+  type: mapping
+  label: Settings
+  mapping:
+    wget_static_success:
+      type: integer
+    wget_static_success_message:
+      type: string
+    wget_static_command:
+      type: string
+    wget_static_enable_wget_log:
+      type: boolean
+    wget_static_cmd_availability:
+      type: boolean
+    wget_static_success_redirect:
+      type: string
