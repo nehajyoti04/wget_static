@@ -5,7 +5,9 @@
 
 namespace Drupal\wget_static\Controller;
 
+use Drupal\Core\Form;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\wget_static\Form\WgetStaticForm;
 
 /**
  * Default controller for the wget_static module.
