@@ -1,22 +1,5 @@
 <?php
-
-/**
- * @file
- * Contains Drupal\wget_static\Form\AddForm
- */
-
-namespace Drupal\wget_static\Form;
-
-use Drupal\Core\Form\FormBase;
-use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
-use Drupal\Component\Utility\UrlHelper;
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\ChangedCommand;
-use Drupal\Core\Ajax\CssCommand;
-use Drupal\Core\Ajax\HtmlCommand;
-use Drupal\Core\Ajax\InvokeCommand;
-use Drupal\Core\Form;
+namespace Drupal\wget_static;
 
 /**
  * Class AddForm.
