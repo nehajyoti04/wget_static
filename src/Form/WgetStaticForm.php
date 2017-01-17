@@ -44,9 +44,9 @@ class WgetStaticForm extends FormBase {
 // not scalar. You'll need to provide a default value in
 // config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
       $form['wget_static_content'] = array(
-        '#type' => 'fieldset',
+        '#type' => 'details',
         '#title' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_title'),
-        '#collapsible' => TRUE,
+        '#open' => TRUE,
         '#group' => 'wget_static',
         '#description' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_description'),
       );
@@ -64,9 +64,9 @@ class WgetStaticForm extends FormBase {
 // not scalar. You'll need to provide a default value in
 // config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
     $form['wget_static_settings'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => \Drupal::config('wget_static.settings')->get('wget_static_settings_tab_title'),
-      '#collapsible' => TRUE,
+      '#open' => TRUE,
       '#group' => 'wget_static',
       '#description' => \Drupal::config('wget_static.settings')->get('wget_static_settings_tab_description'),
     );
@@ -112,7 +112,7 @@ class WgetStaticForm extends FormBase {
       ),
     );
     $form['wget_static_content']['data'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#prefix' => '<div id="node-contentform-data">',
       '#suffix' => '</div>',
     );
@@ -204,16 +204,16 @@ class WgetStaticForm extends FormBase {
    */
   public function _wget_static_wget_options(&$form, &$form_state) {
     $form['wget_static_settings']['wget'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Wget Options'),
-      '#collapsible' => TRUE,
+      '#open' => TRUE,
       '#collapsed' => TRUE,
       '#description' => t('Configure Wget for static HTML generation'),
     );
 
     // Directory Options.
     $form['wget_static_settings']['wget']['directory'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Directory Options'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
@@ -231,7 +231,7 @@ class WgetStaticForm extends FormBase {
 
     // HTTP Options.
     $form['wget_static_settings']['wget']['http'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('HTTP/HTTPS Options'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
@@ -276,7 +276,7 @@ class WgetStaticForm extends FormBase {
 
     // Recursive Retrieval Options.
     $form['wget_static_settings']['wget']['rec'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Recursive Retrieval Options'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
@@ -309,7 +309,7 @@ class WgetStaticForm extends FormBase {
 
     // Accept/Reject List.
     $form['wget_static_settings']['wget']['accept'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Accept/Reject Options'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
@@ -485,7 +485,7 @@ class WgetStaticForm extends FormBase {
       ),
     );
     $form['wget_static_settings']['ftp'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('FTP settings'),
       '#states' => array(
         'visible' => array(
@@ -533,7 +533,7 @@ class WgetStaticForm extends FormBase {
       '#value' => t('Submit'),
     );
     $form['wget_static_settings']['webdav'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Webdav settings'),
       '#states' => array(
         'visible' => array(
@@ -592,7 +592,7 @@ class WgetStaticForm extends FormBase {
       '#default_value' => FALSE,
     );
     $form['wget_static_settings']['webdav']['tfa_data'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       '#title' => t('Two Factor Authentication Settings'),
@@ -626,7 +626,7 @@ class WgetStaticForm extends FormBase {
 
     // Advanced Options.
     $form['wget_static_settings']['webdav']['advanced_options'] = array(
-      '#type' => 'fieldset',
+      '#type' => 'details',
       '#title' => t('Advanced Options'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
