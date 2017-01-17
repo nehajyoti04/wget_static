@@ -1,14 +1,17 @@
 <?php
-namespace Drupal\wget_static;
-
+namespace Drupal\wget_static\Form;
+use Drupal\Core\Form\FormBase;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\Entity\NodeType;
+use Drupal\node\NodeTypeInterface;
 /**
  * Class AddForm.
  *
- * @package Drupal\age_calculator\Form\AddForm
+ * @package Drupal\wget_static\Form\WgetStaticForm
  */
 class WgetStaticForm extends FormBase {
 
-//  protected $form_type;
+  protected $form_type;
   /**
    * {@inheritdoc}
    */
@@ -19,7 +22,7 @@ class WgetStaticForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $form_type = '') {
+  public function buildForm(array $form, FormStateInterface $form_state, $form_type = NULL) {
     $form = array();
 
     $form['wget_static_of'] = array(
@@ -49,7 +52,7 @@ class WgetStaticForm extends FormBase {
       );
 
       $wget_static_content_form = '_wget_static_' . $form_type . '_contentform';
-      $wget_static_content_form($form, $form_state);
+      self::$wget_static_content_form($form, $form_state);
     }
 
     // @FIXME
@@ -68,8 +71,8 @@ class WgetStaticForm extends FormBase {
       '#description' => \Drupal::config('wget_static.settings')->get('wget_static_settings_tab_description'),
     );
 
-    _wget_static_wget_options($form, $form_state);
-    _wget_static_final_settings($form, $form_state);
+    self::_wget_static_wget_options($form, $form_state);
+    self::_wget_static_final_settings($form, $form_state);
 
     return $form;
   }
@@ -91,16 +94,16 @@ class WgetStaticForm extends FormBase {
   /**
    * Constructs Content form for node form type..
    */
-  function _wget_static_node_contentform(&$form, &$form_state) {
+  public function _wget_static_node_contentform(&$form, &$form_state, $query= array()) {
     // Access Query parameters.
-    $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters();
+    $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), $query);
     $default = isset($query_params['nid']) ? $query_params['nid'] : NULL;
-    $node = _wget_static_verify_nid_parameter($default);
+    $node = self::_wget_static_verify_nid_parameter($default);
     $form['wget_static_content']['content_type'] = array(
       '#type' => 'select',
       '#title' => t('Select Content Type'),
       '#required' => TRUE,
-      '#options' => _wget_static_getcontenttypes(),
+      '#options' => self::_wget_static_getcontenttypes(),
       '#ajax' => array(
         'callback' => '_wget_static_node_contentform_ajax',
         'wrapper' => 'node-contentform-data',
@@ -118,7 +121,7 @@ class WgetStaticForm extends FormBase {
         '#type' => 'select',
         '#title' => t('Select Content'),
         '#required' => TRUE,
-        '#options' => _wget_static_getcontent($node['content_type']),
+        '#options' => self::_wget_static_getcontent($node['content_type']),
       );
       // Assigning default values.
       $form['wget_static_content']['content_type']['#default_value'] = $node['content_type'];
@@ -137,7 +140,7 @@ class WgetStaticForm extends FormBase {
       '#required' => TRUE,
       '#options' => array_merge(
         array('0' => t('-- Please Select --')),
-        _wget_static_getcontent($form_state['values']['content_type'])),
+        self::_wget_static_getcontent($form_state['values']['content_type'])),
     );
     return $form['wget_static_content']['data'];
   }
@@ -146,10 +149,12 @@ class WgetStaticForm extends FormBase {
    * Function returns array of available content types.
    */
   function _wget_static_getcontenttypes() {
-    $types_oa = node_type_get_types();
-    foreach ($types_oa as $o) {
-      $types[$o->type] = $o->name;
+    $all_content_types = NodeType::loadMultiple();
+    /** @var NodeType $content_type */
+    foreach ($all_content_types as $machine_name => $content_type) {
+      $types[$content_type->get('type')] = $content_type->get('name');
     }
+
     return $types;
   }
 
@@ -197,7 +202,7 @@ class WgetStaticForm extends FormBase {
   /**
    * Adds wget options form elements.
    */
-  function _wget_static_wget_options(&$form, &$form_state) {
+  public function _wget_static_wget_options(&$form, &$form_state) {
     $form['wget_static_settings']['wget'] = array(
       '#type' => 'fieldset',
       '#title' => t('Wget Options'),
@@ -421,5 +426,230 @@ class WgetStaticForm extends FormBase {
         '#description' => t('This input will directly appended to the wget command responsible for generation of static HTML'),
       );
     }
+  }
+
+  /**
+   * Function verifies default variable.
+   */
+  function _wget_static_verify_nid_parameter($default) {
+    if (empty($default)) {
+      return FALSE;
+    }
+    if (is_numeric($default)) {
+      $node = node_load($default);
+      if ($node) {
+        return array(
+          'nid' => $node->nid,
+          'title' => $node->title,
+          'content_type' => $node->type,
+        );
+      }
+    }
+  }
+
+  /**
+   * Adds save/download settings for elements.
+   */
+  function _wget_static_final_settings(&$form, &$form_state) {
+    $form['wget_static_settings']['final'] = array(
+      '#type' => 'select',
+      '#title' => t('Save generated static HTML'),
+      '#options' => array(
+        'none' => t('Select'),
+      ),
+    );
+
+    foreach (\Drupal::state()->get('wget_static_save_download', array('download' => 'download')) as $key => $value) {
+      if ($value) {
+        $form['wget_static_settings']['final']['#options'][$key] = ucfirst($key);
+      }
+    }
+
+    $form['wget_static_settings']['download_file'] = array(
+      '#type' => 'textfield',
+      '#maxlength' => 30,
+      '#title' => t('Name for compressed file'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="final"]' => array('value' => 'download'),
+        ),
+      ),
+    );
+    $form['wget_static_settings']['download'] = array(
+      '#type' => 'submit',
+      '#value' => t('Download'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="final"]' => array('value' => 'download'),
+        ),
+      ),
+    );
+    $form['wget_static_settings']['ftp'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('FTP settings'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="final"]' => array('value' => 'ftp'),
+        ),
+      ),
+    );
+    $form['wget_static_settings']['ftp']['host'] = array(
+      '#type' => 'textfield',
+      '#title' => t('FTP Server Location'),
+      '#description' => t('Please exclude protocol ftp:// at beginning and trailing slashes (/) at the end.'),
+      '#element_validate' => array('_wget_static_validate_host'),
+    );
+    $form['wget_static_settings']['ftp']['username'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Username'),
+    );
+    $form['wget_static_settings']['ftp']['password'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Password'),
+    );
+    $form['wget_static_settings']['ftp']['location'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Remote Folder Name'),
+      '#description' => t('Folder name in which static html has to be saved on remote server. Any existing directory of the same name would be removed.'),
+    );
+    $form['wget_static_settings']['ftp']['compressed_file'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send as Compressed File on FTP Server'),
+      '#default_value' => FALSE,
+      '#description' => t('Compressed files would be sent faster.'),
+    );
+    $form['wget_static_settings']['ftp']['ftp_filename'] = array(
+      '#type' => 'textfield',
+      '#maxlength' => 30,
+      '#title' => t('Name for compressed file'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="compressed_file"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $form['wget_static_settings']['ftp']['ftp'] = array(
+      '#type' => 'submit',
+      '#value' => t('Submit'),
+    );
+    $form['wget_static_settings']['webdav'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Webdav settings'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="final"]' => array('value' => 'webdav'),
+        ),
+      ),
+    );
+    $form['wget_static_settings']['webdav']['protocol'] = array(
+      '#type' => 'select',
+      '#title' => t('Webdav Protocol'),
+      '#description' => t('Select Remote Webdav Server Protocol.'),
+      '#options' => array(
+        'http' => t('HTTP'),
+        'https' => t('HTTPS'),
+      ),
+    );
+
+    $form['wget_static_settings']['webdav']['host'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Webdav Server Location'),
+      '#description' => t('Please exclude protocol http:// or https:// at beginning and trailing slashes (/) at the end.'),
+      '#element_validate' => array('_wget_static_validate_host'),
+    );
+    $form['wget_static_settings']['webdav']['username'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Username'),
+    );
+    $form['wget_static_settings']['webdav']['password'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Password'),
+    );
+    $form['wget_static_settings']['webdav']['location'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Remote Folder Name'),
+      '#description' => t('Folder name in which static html has to be saved on remote server. Any existing directory of the same name would be removed.'),
+    );
+    $form['wget_static_settings']['webdav']['compressed_file'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Send as Compressed File on Webdav Server'),
+      '#default_value' => FALSE,
+      '#description' => t('Compressed files would be sent faster.'),
+    );
+    $form['wget_static_settings']['webdav']['webdav_filename'] = array(
+      '#type' => 'textfield',
+      '#maxlength' => 30,
+      '#title' => t('Name for compressed file'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="compressed_file"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $form['wget_static_settings']['webdav']['webdav_tfa'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable Two Factor Authentication'),
+      '#default_value' => FALSE,
+    );
+    $form['wget_static_settings']['webdav']['tfa_data'] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#title' => t('Two Factor Authentication Settings'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="webdav_tfa"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $form['wget_static_settings']['webdav']['tfa_data']['pem'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('PEM/P12 File'),
+      '#description' => t('Accepts PEM/P12 file containing public and private key (containing passphrase)'),
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('pem p12'),
+      ),
+    );
+    $form['wget_static_settings']['webdav']['tfa_data']['cert'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Cert File'),
+      '#description' => t('Accepts CERT file : public key'),
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('crt'),
+      ),
+    );
+    $form['wget_static_settings']['webdav']['tfa_data']['passph'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Passphrase'),
+      '#description' => t('Enter Passphrase Required for Private Key'),
+    );
+
+    // Advanced Options.
+    $form['wget_static_settings']['webdav']['advanced_options'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Advanced Options'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['wget_static_settings']['webdav']['advanced_options']['auth'] = array(
+      '#type' => 'select',
+      '#title' => t('Authentication Method'),
+      '#options' => array(
+        'anyauth' => t('Any Authentication'),
+        'basic' => t('Basic'),
+        'digest' => t('Digest'),
+      ),
+    );
+    if (\Drupal::currentUser()->hasPermission('wget use supercmd')) {
+      $form['wget_static_settings']['webdav']['advanced_options']['curl'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Direct Curl Options'),
+        '#description' => t('The value will directly append to the curl command being executed. Please refer to curl documentation for valid options.'),
+      );
+    }
+    $form['wget_static_settings']['webdav']['webdav'] = array(
+      '#type' => 'submit',
+      '#value' => t('Submit'),
+    );
   }
 }

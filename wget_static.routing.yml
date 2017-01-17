@@ -1,10 +1,27 @@
+#wget_static.page_callback:
+#  path: '/wget_static/{form_type}'
+#  defaults:
+#    _title: 'Wget Static Generate and Save'
+#    _controller: '\Drupal\wget_static\Controller\DefaultController::wget_static_page_callback'
+#  requirements:
+#    _permission: 'wget generate static'
+
+#wget_static.page_callback:
+#  path: '/wget_static'
+#  defaults:
+#    _title: 'Wget Static Generate and Save'
+#    _controller: '\Drupal\wget_static\Controller\DefaultController::wget_static_page_callback'
+#  requirements:
+#    _permission: 'wget generate static'
+
 wget_static.page_callback:
   path: '/wget_static/{form_type}'
   defaults:
     _title: 'Wget Static Generate and Save'
-    _controller: '\Drupal\wget_static\Controller\DefaultController::wget_static_page_callback'
+    _form: '\Drupal\wget_static\Form\WgetStaticForm'
   requirements:
     _permission: 'wget generate static'
+
 wget_static.config_form:
   path: /admin/config/wget_static
   defaults:

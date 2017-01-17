@@ -1,0 +1,2 @@
+permission_callbacks:
+  - Drupal\wget_static\Permissions::permissions
