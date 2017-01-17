@@ -2,6 +2,7 @@
 namespace Drupal\wget_static\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeTypeInterface;
 /**
@@ -94,7 +95,7 @@ class WgetStaticForm extends FormBase {
   /**
    * Constructs Content form for node form type..
    */
-  public function _wget_static_node_contentform(&$form, &$form_state, $query= array()) {
+  public function _wget_static_node_contentform(array &$form, FormStateInterface $form_state, $query= array()) {
     // Access Query parameters.
     $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), $query);
     $default = isset($query_params['nid']) ? $query_params['nid'] : NULL;
@@ -105,7 +106,7 @@ class WgetStaticForm extends FormBase {
       '#required' => TRUE,
       '#options' => self::_wget_static_getcontenttypes(),
       '#ajax' => array(
-        'callback' => '_wget_static_node_contentform_ajax',
+        'callback' => array($this, '_wget_static_node_contentform_ajax'),
         'wrapper' => 'node-contentform-data',
         'method' => 'replace',
         'effect' => 'fade',
@@ -133,14 +134,14 @@ class WgetStaticForm extends FormBase {
   /**
    * Ajax callback for node contentform.
    */
-  function _wget_static_node_contentform_ajax($form, $form_state) {
+  function _wget_static_node_contentform_ajax(array &$form, FormStateInterface $form_state) {
     $form['wget_static_content']['data']['nid'] = array(
       '#type' => 'select',
       '#title' => t('Select Content'),
       '#required' => TRUE,
       '#options' => array_merge(
         array('0' => t('-- Please Select --')),
-        self::_wget_static_getcontent($form_state['values']['content_type'])),
+        self::_wget_static_getcontent($form_state->getValues()['content_type'])),
     );
     return $form['wget_static_content']['data'];
   }
@@ -177,7 +178,7 @@ class WgetStaticForm extends FormBase {
   /**
    * Constructs Content form for path form type..
    */
-  function _wget_static_path_contentform(&$form, &$form_state) {
+  function _wget_static_path_contentform(array &$form, FormStateInterface $form_state) {
     // Access Query parameters.
     $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters();
     $default = isset($query_params['url']) ? $query_params['url'] : NULL;
@@ -202,12 +203,11 @@ class WgetStaticForm extends FormBase {
   /**
    * Adds wget options form elements.
    */
-  public function _wget_static_wget_options(&$form, &$form_state) {
+  public function _wget_static_wget_options(array &$form, FormStateInterface $form_state) {
     $form['wget_static_settings']['wget'] = array(
       '#type' => 'details',
       '#title' => t('Wget Options'),
       '#open' => TRUE,
-      '#collapsed' => TRUE,
       '#description' => t('Configure Wget for static HTML generation'),
     );
 
@@ -287,11 +287,10 @@ class WgetStaticForm extends FormBase {
       '#default_value' => TRUE,
     );
     $form['wget_static_settings']['wget']['rec']['depth'] = array(
-      '#type' => 'textfield',
+      '#type' => 'number',
       '#title' => t('Specify recursion maximum depth level depth'),
       '#description' => t('Enter depth level, -1 for maximum depth'),
-      '#maxlength' => 2,
-      '#element_validate' => array('element_validate_integer'),
+      '#size' => 2,
       '#default_value' => 5,
     );
     $form['wget_static_settings']['wget']['rec']['convert_links'] = array(
@@ -436,8 +435,10 @@ class WgetStaticForm extends FormBase {
       return FALSE;
     }
     if (is_numeric($default)) {
-      $node = node_load($default);
+//      $node = node_load($default);
+      $node = Node::load($default);
       if ($node) {
+//        \Drupal::logger('my_module')->error($node->nid);
         return array(
           'nid' => $node->nid,
           'title' => $node->title,
@@ -450,7 +451,7 @@ class WgetStaticForm extends FormBase {
   /**
    * Adds save/download settings for elements.
    */
-  function _wget_static_final_settings(&$form, &$form_state) {
+  function _wget_static_final_settings(array &$form, FormStateInterface $form_state) {
     $form['wget_static_settings']['final'] = array(
       '#type' => 'select',
       '#title' => t('Save generated static HTML'),
@@ -497,7 +498,8 @@ class WgetStaticForm extends FormBase {
       '#type' => 'textfield',
       '#title' => t('FTP Server Location'),
       '#description' => t('Please exclude protocol ftp:// at beginning and trailing slashes (/) at the end.'),
-      '#element_validate' => array('_wget_static_validate_host'),
+//      '#element_validate' => array('_wget_static_validate_host'),
+      '#element_validate' => array(array($this, 'myElementValidator')),
     );
     $form['wget_static_settings']['ftp']['username'] = array(
       '#type' => 'textfield',
@@ -555,7 +557,8 @@ class WgetStaticForm extends FormBase {
       '#type' => 'textfield',
       '#title' => t('Webdav Server Location'),
       '#description' => t('Please exclude protocol http:// or https:// at beginning and trailing slashes (/) at the end.'),
-      '#element_validate' => array('_wget_static_validate_host'),
+//      '#element_validate' => array('_wget_static_validate_host'),
+      '#element_validate' => array(array($this, 'myElementValidator')),
     );
     $form['wget_static_settings']['webdav']['username'] = array(
       '#type' => 'textfield',
@@ -651,5 +654,57 @@ class WgetStaticForm extends FormBase {
       '#type' => 'submit',
       '#value' => t('Submit'),
     );
+  }
+
+  /**
+   * Validates FTP host name.
+   */
+  function _wget_static_validate_host($element, &$form_state, $form) {
+    if (!empty($element['#value'])) {
+      if (preg_match('/http:/', $element['#value']) || preg_match('/ftp:/', $element['#value']) || preg_match('/https:/', $element['#value']) || preg_match('/ftps:/', $element['#value'])) {
+        form_error($element, t('Please ensure Host field does not contain protocol like http://, https:// or ftp://, ftps://.'));
+      }
+      if (preg_match('#/$#', $element['#value'])) {
+        form_error($element, t('Please ensure Host field does not end with "/"'));
+      }
+      if (!@ftp_connect($element['#value']) && $form_state['values']['final'] == 'ftp') {
+        form_error($element, t('Failed to connect to FTP server'));
+      }
+    }
+    else {
+      if ($form_state['values']['final'] == 'ftp') {
+        form_error($element, t('FTP host field is required'));
+      }
+    }
+  }
+
+  /**
+   * Validates my element.
+   *
+   * @param array $element
+   *   The form element to process.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The form state.
+   * @param array $complete_form
+   *   The complete form structure.
+   */
+  public static function myElementValidator(&$element, FormStateInterface $form_state, &$complete_form) {
+    // Validate something.
+    if (!empty($element['#value'])) {
+      if (preg_match('/http:/', $element['#value']) || preg_match('/ftp:/', $element['#value']) || preg_match('/https:/', $element['#value']) || preg_match('/ftps:/', $element['#value'])) {
+        $form_state->setError($element, t('Please ensure Host field does not contain protocol like http://, https:// or ftp://, ftps://.'));
+      }
+      if (preg_match('#/$#', $element['#value'])) {
+        $form_state->setError($element, t('Please ensure Host field does not end with "/"'));
+      }
+      if (!@ftp_connect($element['#value']) && $form_state['values']['final'] == 'ftp') {
+        $form_state->setError($element, t('Failed to connect to FTP server'));
+      }
+    }
+    else {
+      if ($form_state->getValues()['final'] == 'ftp') {
+        $form_state->setError($element, t('FTP host field is required'));
+      }
+    }
   }
 }
