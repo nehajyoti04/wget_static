@@ -60,15 +60,22 @@ function _wget_static_isenabled($func) {
  * Implements hook_uninstall().
  */
 function wget_static_uninstall() {
-  \Drupal::config('wget_static.settings')->clear('wget_static_cmd_availability')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_command')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_content_tab_title')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_content_tab_description')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_settings_tab_title')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_settings_tab_description')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_success')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_success_message')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_success_redirect')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_enable_wget_log')->save();
-  \Drupal::config('wget_static.settings')->clear('wget_static_save_download')->save();
+
+//  if (\Drupal::service('theme_handler')->themeExists('seven')) {
+//    \Drupal::configFactory()->getEditable('seven.settings')->clear('third_party_settings.shortcut')->save(TRUE);
+//  }
+
+  \Drupal::configFactory()->getEditable('wget_static.settings')->delete();
+//  \Drupal::state()->delete('age_calculator.settings');
+//  \Drupal::config('wget_static.settings')->clear('wget_static_cmd_availability')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_command')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_content_tab_title')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_content_tab_description')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_settings_tab_title')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_settings_tab_description')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_success')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_success_message')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_success_redirect')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_enable_wget_log')->save();
+//  \Drupal::config('wget_static.settings')->clear('wget_static_save_download')->save();
 }

@@ -4,3 +4,8 @@ wget_static_command: /usr/local/bin/wget
 wget_static_enable_wget_log: false
 wget_static_cmd_availability: true
 wget_static_success_redirect: '<front>'
+wget_static_content_tab_title: 'Select Content'
+wget_static_content_tab_description: 'Select contents for static HTML generation'
+wget_static_settings_tab_title: 'Settings'
+wget_static_settings_tab_description: 'Settings for static HTML generation'
+
