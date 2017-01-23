@@ -3,9 +3,12 @@ namespace Drupal\wget_static\Form;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeTypeInterface;
+use Drupal\wget_static\WgetStaticRecursiveZip;
+
 /**
  * Class AddForm.
  *
@@ -92,6 +95,48 @@ class WgetStaticForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+
+    $temp_dir = file_directory_temp();
+    $timestamp = time();
+    $wget_dir = 'wget/' . $form_state['values']['wget_static_of'] . '/' . $timestamp;
+
+    // Create static html at temporary directory.
+    if (!$thi->_wget_static_generate_static_html($temp_dir, $wget_dir, $form_state)) {
+      drupal_set_message(t('Error creating temporary static html.'), 'error', FALSE);
+      return;
+    }
+
+    switch ($form_state['values']['final']) {
+      case 'download':
+        $download_url = $this->_wget_static_create_archive($temp_dir, $wget_dir, $form_state['values']['download_file'], $timestamp, TRUE);
+        if (!$download_url) {
+          file_unmanaged_delete_recursive($temp_dir . "/wget");
+          return;
+        }
+        break;
+
+      case 'ftp':
+        if (!$this->_wget_static_ftp($temp_dir, $wget_dir, $form_state, $timestamp)) {
+          file_unmanaged_delete_recursive($temp_dir . "/wget");
+          return;
+        }
+        break;
+
+      case 'webdav':
+        if (!$this->_wget_static_webdav($temp_dir, $wget_dir, $form_state, $timestamp)) {
+          file_unmanaged_delete_recursive($temp_dir . "/wget");
+          return;
+        }
+    }
+
+    if (\Drupal::state()->get('wget_static_success', 0)) {
+      $form_state['redirect'] = url(\Drupal::state()->get('wget_static_success_redirect', '<front>'), array('absolute' => TRUE));
+    }
+    else {
+      $form_state['rebuild'] = TRUE;
+      drupal_set_message(\Drupal::state()->get('wget_static_success_message', 'Operation Successfully Completed'), 'status', FALSE);
+    }
+
 
   }
 
@@ -742,4 +787,175 @@ class WgetStaticForm extends FormBase {
       }
     }
   }
+
+  /**
+   * Generates static html.
+   */
+  function _wget_static_generate_static_html($temp_dir, $wget_dir, $form_state) {
+    $wget_options = $this->_wget_static_build_options($form_state);
+    $wget_url = $this->_wget_static_build_url($form_state['values']);
+    $wget_cmd = $this->_wget_static_build_command($wget_options, $wget_url, $temp_dir, $wget_dir);
+    file_unmanaged_delete_recursive($temp_dir . "/wget");
+    // Check for debug mode.
+    if (\Drupal::state()->get('wget_static_enable_wget_log', FALSE)) {
+      $log = shell_exec($wget_cmd . " 2>&1");
+      \Drupal::logger('wget_static')->notice('<pre> ' . $log . ' </pre>');
+      \Drupal::logger('wget_static')->notice('wget command built: '. $wget_cmd);
+    }
+    else {
+      shell_exec($wget_cmd);
+    }
+    return TRUE;
+  }
+
+
+  /**
+   * Returns array of wget options.
+   */
+  function _wget_static_build_options($form_state) {
+    $wget = array(
+      'no_dir' => array(
+        'use' => ($form_state['values']['create_directory']) ? FALSE : TRUE,
+        'cmd' => '-nd',
+      ),
+      'force_dir' => array(
+        'use' => ($form_state['values']['create_directory']) ? TRUE : FALSE,
+        'cmd' => '-x',
+      ),
+      'no_host_dir' => array(
+        'use' => ($form_state['values']['no_host_directory']) ? TRUE : FALSE,
+        'cmd' => '-nH',
+      ),
+      'default_page' => array(
+        'use' => ($form_state['values']['default_page']) ? TRUE : FALSE,
+        'cmd' => '--default-page=' . preg_replace("/[^\p{L}\p{N}\.\-\_]/", "", trim($form_state['values']['default_page'])),
+      ),
+      'adjust_extension' => array(
+        'use' => ($form_state['values']['adjust_extension']) ? TRUE : FALSE,
+        'cmd' => '-E',
+      ),
+      'nocache' => array(
+        'use' => ($form_state['values']['cache']) ? FALSE : TRUE,
+        'cmd' => '--no-cache',
+      ),
+      'httpssecureprotocol' => array(
+        'use' => ($form_state['values']['secure_protocol'] == 'auto') ? FALSE : TRUE,
+        'cmd' => '--secure-protocol=' . $form_state['values']['secure_protocol'],
+      ),
+      'httpsonly' => array(
+        'use' => ($form_state['values']['httpsonly']) ? TRUE : FALSE,
+        'cmd' => '--https-only',
+      ),
+      'recretrieval' => array(
+        'use' => ($form_state['values']['enable']) ? TRUE : FALSE,
+        'cmd' => '-r',
+      ),
+      'depthlevel' => array(
+        'use' => (($form_state['values']['enable'] == TRUE) && $form_state['values']['depth'] != '5') ? TRUE : FALSE,
+        'cmd' => '--level=' . $form_state['values']['depth'],
+      ),
+      'convertlinks' => array(
+        'use' => ($form_state['values']['convert_links']) ? TRUE : FALSE,
+        'cmd' => '-k',
+      ),
+      'page_requisites' => array(
+        'use' => ($form_state['values']['page_requisites']) ? TRUE : FALSE,
+        'cmd' => '-p',
+      ),
+      'followdomains' => array(
+        'use' => ($form_state['values']['domains'] == 'accept') ? TRUE : FALSE,
+        'cmd' => '--domains=' . preg_replace('/\ /', '', $form_state['values']['domainsaccept']),
+      ),
+      'excludedomains' => array(
+        'use' => ($form_state['values']['domains'] == 'reject') ? TRUE : FALSE,
+        'cmd' => '--exclude-domains ' . preg_replace('/\ /', '', $form_state['values']['domainsreject']),
+      ),
+      'followtags' => array(
+        'use' => ($form_state['values']['tags'] == 'accept') ? TRUE : FALSE,
+        'cmd' => '--follow-tags=' . preg_replace('/[^\p{L}\,]/', '', $form_state['values']['tagsaccept']),
+      ),
+      'ignoretags' => array(
+        'use' => ($form_state['values']['tags'] == 'reject') ? TRUE : FALSE,
+        'cmd' => '--ignore-tags=' . preg_replace('/[^\p{L}\,]/', '', $form_state['values']['tagsreject']),
+      ),
+      'acceptfiles' => array(
+        'use' => ($form_state['values']['files'] == 'accept') ? TRUE : FALSE,
+        'cmd' => '-A ' . preg_replace("/[^\p{L}\p{N}\,]/", "", trim($form_state['values']['filesaccept'])),
+      ),
+      'rejectlist' => array(
+        'use' => ($form_state['values']['files'] == 'reject') ? TRUE : FALSE,
+        'cmd' => '-A ' . preg_replace("/[^\p{L}\p{N}\,]/", "", trim($form_state['values']['filesreject'])),
+      ),
+      'followrellinksonly' => array(
+        'use' => ($form_state['values']['relative_links_only']) ? TRUE : FALSE,
+        'cmd' => '-L',
+      ),
+      'robotsoff' => array(
+        'use' => ($form_state['values']['robots']) ? FALSE : TRUE,
+        'cmd' => '-e robots=off',
+      ),
+      'supercmd' => array(
+        'use' => (isset($form_state['values']['supercmd']) && !empty($form_state['values']['supercmd'])) ? TRUE : FALSE,
+        'cmd' => isset($form_state['values']['supercmd']) ? $form_state['values']['supercmd'] : '',
+      ),
+    );
+    return $wget;
+  }
+
+  /**
+   * Builds wget url.
+   */
+  function _wget_static_build_url($values) {
+    switch ($values['wget_static_of']) {
+      case 'node':
+        return Url::fromUri('node/' . $values['nid'], array('absolute' => TRUE));
+
+      case 'path':
+        return Url::fromUri($values['path'], array('absolute' => TRUE));
+
+      case 'website':
+        return Url::fromUri('', array('absolute' => TRUE));
+    }
+  }
+
+  /**
+   * Builds wget final command.
+   */
+  function _wget_static_build_command($options, $url, $temp_dir, $wget_dir) {
+    $wget = trim(shell_exec("which wget"));
+    $wget = ($wget) ? $wget : \Drupal::state()->get('wget_static_command', '/usr/local/bin/wget');
+    $cmd = $wget . " ";
+    foreach ($options as $option) {
+      if ($option['use']) {
+        $cmd .= $option['cmd'] . " ";
+      }
+    }
+    $cmd .= "-o " . $temp_dir . "/wget.log -P" . $temp_dir . "/" . $wget_dir . "/ " . $url;
+    return $cmd;
+  }
+
+**
+* Generates zip archive.
+*/
+  function _wget_static_create_archive($temp_dir, $wget_dir, $filename, $timestamp, $download = FALSE) {
+    // Load class.
+    include_once "zip/recursiveZip.php";
+    $zip = new WgetStaticRecursiveZip();
+    $filename = preg_replace('/[^\p{L}\p{N}\-\_]/', '', $filename);
+    $filename = ($filename) ? $filename . '.zip' : $timestamp . '.zip';
+    $filepath = $zip->compress($temp_dir . "/" . $wget_dir, $temp_dir . "/wget/", $filename);
+    if (!$filepath) {
+      drupal_set_message(t('Unable to compress'), 'error', FALSE);
+      return FALSE;
+    }
+    if ($download) {
+      drupal_add_http_header('Content-disposition', 'attachment; filename=' . $filename);
+      readfile($filepath);
+      drupal_exit();
+    }
+    else {
+      return $filepath;
+    }
+  }
+
 }
