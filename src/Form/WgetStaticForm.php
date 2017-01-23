@@ -408,6 +408,7 @@ class WgetStaticForm extends FormBase {
     );
     $form['wget_static_settings']['wget']['accept']['files'] = array(
       '#type' => 'select',
+      '#validated' => TRUE,
       '#title' => t('Files Options'),
       '#options' => array(
         0 => t('Do nothing'),
