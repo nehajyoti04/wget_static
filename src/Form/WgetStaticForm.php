@@ -1,5 +1,6 @@
 <?php
 namespace Drupal\wget_static\Form;
+use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\node\Entity\Node;
@@ -23,7 +24,8 @@ class WgetStaticForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $form_type = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, $form_type = NULL, $arg2 = '') {
+    \Drupal::logger('inside build form')->notice($form_type);
     $form = array();
 
     $form['wget_static_of'] = array(
@@ -37,13 +39,13 @@ class WgetStaticForm extends FormBase {
         '#type' => 'vertical_tabs',
       );
       // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
-// @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+      // Could not extract the default value because it is either indeterminate, or
+      // not scalar. You'll need to provide a default value in
+      // config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+      // @FIXME
+      // Could not extract the default value because it is either indeterminate, or
+      // not scalar. You'll need to provide a default value in
+      // config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
       $form['wget_static_content'] = array(
         '#type' => 'details',
         '#title' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_title'),
@@ -52,18 +54,19 @@ class WgetStaticForm extends FormBase {
         '#description' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_description'),
       );
 
+      \Drupal::logger('before _wget_static_node_contentform')->notice('called'. $form_type);
       $wget_static_content_form = '_wget_static_' . $form_type . '_contentform';
       self::$wget_static_content_form($form, $form_state);
     }
 
     // @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
-// @FIXME
-// Could not extract the default value because it is either indeterminate, or
-// not scalar. You'll need to provide a default value in
-// config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+    // Could not extract the default value because it is either indeterminate, or
+    // not scalar. You'll need to provide a default value in
+    // config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
+    // @FIXME
+    // Could not extract the default value because it is either indeterminate, or
+    // not scalar. You'll need to provide a default value in
+    // config/install/wget_static.settings.yml and config/schema/wget_static.schema.yml.
     $form['wget_static_settings'] = array(
       '#type' => 'details',
       '#title' => \Drupal::config('wget_static.settings')->get('wget_static_settings_tab_title'),
@@ -78,13 +81,13 @@ class WgetStaticForm extends FormBase {
     return $form;
   }
 
-//  /**
-//   * {@inheritdoc}
-//   */
-//  public function validateForm(array &$form, FormStateInterface $form_state) {
-//
-//  }
-//
+  //  /**
+  //   * {@inheritdoc}
+  //   */
+  //  public function validateForm(array &$form, FormStateInterface $form_state) {
+  //
+  //  }
+  //
   /**
    * {@inheritdoc}
    */
@@ -95,27 +98,35 @@ class WgetStaticForm extends FormBase {
   /**
    * Constructs Content form for node form type..
    */
-  public function _wget_static_node_contentform(array &$form, FormStateInterface $form_state, $query= array()) {
+  public function _wget_static_node_contentform(array &$form, FormStateInterface $form_state, $query = array()) {
+    \Drupal::logger('_wget_static_node_contentform')->notice('_wget_static_node_contentform');
+
+    if (!isset($query)) {
+      $query = UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), array('page'));
+    }
     // Access Query parameters.
     $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), $query);
     $default = isset($query_params['nid']) ? $query_params['nid'] : NULL;
     $node = self::_wget_static_verify_nid_parameter($default);
+    \Drupal::logger('before form element')->notice('..');
     $form['wget_static_content']['content_type'] = array(
       '#type' => 'select',
       '#title' => t('Select Content Type'),
       '#required' => TRUE,
       '#options' => self::_wget_static_getcontenttypes(),
       '#ajax' => array(
-        'callback' => array($this, '_wget_static_node_contentform_ajax'),
+        'callback' => array($this, 'wgetStaticNodeContentFormAjax'),
         'wrapper' => 'node-contentform-data',
         'method' => 'replace',
         'effect' => 'fade',
       ),
     );
+//    kint("hello");
+//    kint($form['wget_static_content']['content_type']);
     $form['wget_static_content']['data'] = array(
-      '#type' => 'details',
-      '#prefix' => '<div id="node-contentform-data">',
-      '#suffix' => '</div>',
+      '#type' => 'fieldset',
+      '#prefix' => "<div id='node-contentform-data'>",
+      '#suffix' => "</div>",
     );
     if ($node) {
       $form['wget_static_content']['data']['nid'] = array(
@@ -134,7 +145,8 @@ class WgetStaticForm extends FormBase {
   /**
    * Ajax callback for node contentform.
    */
-  function _wget_static_node_contentform_ajax(array &$form, FormStateInterface $form_state) {
+  function wgetStaticNodeContentFormAjax(array &$form, FormStateInterface $form_state) {
+    \Drupal::logger('_wget_static_node_contentform_ajax')->notice('inside ajax');
     $form['wget_static_content']['data']['nid'] = array(
       '#type' => 'select',
       '#title' => t('Select Content'),
@@ -150,12 +162,15 @@ class WgetStaticForm extends FormBase {
    * Function returns array of available content types.
    */
   function _wget_static_getcontenttypes() {
+    \Drupal::logger('my_module - before')->notice('_wget_static_getcontenttypes');
     $all_content_types = NodeType::loadMultiple();
+    $types = array();
     /** @var NodeType $content_type */
     foreach ($all_content_types as $machine_name => $content_type) {
       $types[$content_type->get('type')] = $content_type->get('name');
     }
 
+    \Drupal::logger('my_module - after')->notice('_wget_static_getcontenttypes');
     return $types;
   }
 
@@ -163,14 +178,25 @@ class WgetStaticForm extends FormBase {
    * Returns array of all the contents of provided content type.
    */
   function _wget_static_getcontent($content_type) {
-    $nids = db_select('node', 'n')
-      ->fields('n', array('nid'))
+    $node_array = array();
+    \Drupal::logger('my_module')->notice('wget_static_get_content');
+//    print '<pre>'; print_r("wget_static_get_content"); print '</pre>'; exit;
+//    $nids = db_select('node', 'n')
+//      ->fields('n', array('nid'))
+//      ->condition('n.type', $content_type)
+//      ->execute()
+//      ->fetchCol();
+
+    $nids = db_select('node_field_data', 'n')
+      ->fields('n', array('nid', 'title'))
       ->condition('n.type', $content_type)
       ->execute()
-      ->fetchCol();
+      ->fetchAll();
+
     foreach ($nids as $n) {
-      $node = \Drupal::entityManager()->getStorage('node')->load($n);
-      $node_array[$n] = $node->title;
+//      $node = \Drupal::entityManager()->getStorage('node')->load($n);
+      \Drupal::logger('node title')->notice($n->title);
+      $node_array[$n->nid] = $n->title;
     }
     return $node_array;
   }
@@ -179,8 +205,11 @@ class WgetStaticForm extends FormBase {
    * Constructs Content form for path form type..
    */
   function _wget_static_path_contentform(array &$form, FormStateInterface $form_state) {
+    \Drupal::logger('my_module')->notice('_wget_static_path_contentform');
+//    print '<pre>'; print_r("_wget_static_path_contentform"); print '</pre>'; exit;
     // Access Query parameters.
-    $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters();
+    $query_params = UrlHelper::filterQueryParameters();
+    \Drupal::logger('query params')->notice('_wget_static_path_contentform');
     $default = isset($query_params['url']) ? $query_params['url'] : NULL;
     $form['wget_static_content']['path'] = array(
       '#type' => 'textfield',
@@ -195,9 +224,11 @@ class WgetStaticForm extends FormBase {
   /**
    * Validates Internal Path.
    */
-  function wget_static_path_validate($element, &$form_state, $form) {
-    if (!(!empty($element['#value']) && \Drupal::service("path.validator")->isValid(drupal_get_normal_path($element['#value'])) && !\Drupal\Component\Utility\UrlHelper::isExternal($element['#value']))) {
-      form_error($element, t('Please enter valid internal path.'));
+  function wget_static_path_validate($element, FormStateInterface $form_state, $form) {
+    \Drupal::logger('my_module')->notice('wget_static_path_validate');
+    print '<pre>'; print_r("wget_static_path_validate"); print '</pre>';
+    if (!(!empty($element['#value']) && \Drupal::service("path.validator")->isValid(\Drupal::service('path.alias_manager')->getPathByAlias($element['#value'])) && !\Drupal\Component\Utility\UrlHelper::isExternal($element['#value']))) {
+      $form_state->setError($element, t('Please enter valid internal path.'));
     }
   }
   /**
@@ -431,14 +462,17 @@ class WgetStaticForm extends FormBase {
    * Function verifies default variable.
    */
   function _wget_static_verify_nid_parameter($default) {
+
+    \Drupal::logger('_wget_static_verify_nid_parameter')->notice("default".$default);
     if (empty($default)) {
       return FALSE;
     }
     if (is_numeric($default)) {
+      \Drupal::logger('inside default')->notice($default);
 //      $node = node_load($default);
       $node = Node::load($default);
       if ($node) {
-//        \Drupal::logger('my_module')->error($node->nid);
+        \Drupal::logger('my_module - node nid')->notice($node->nid);
         return array(
           'nid' => $node->nid,
           'title' => $node->title,
@@ -659,26 +693,26 @@ class WgetStaticForm extends FormBase {
   /**
    * Validates FTP host name.
    */
-  function _wget_static_validate_host($element, &$form_state, $form) {
-    if (!empty($element['#value'])) {
-      if (preg_match('/http:/', $element['#value']) || preg_match('/ftp:/', $element['#value']) || preg_match('/https:/', $element['#value']) || preg_match('/ftps:/', $element['#value'])) {
-        form_error($element, t('Please ensure Host field does not contain protocol like http://, https:// or ftp://, ftps://.'));
-      }
-      if (preg_match('#/$#', $element['#value'])) {
-        form_error($element, t('Please ensure Host field does not end with "/"'));
-      }
-      if (!@ftp_connect($element['#value']) && $form_state['values']['final'] == 'ftp') {
-        form_error($element, t('Failed to connect to FTP server'));
-      }
-    }
-    else {
-      if ($form_state['values']['final'] == 'ftp') {
-        form_error($element, t('FTP host field is required'));
-      }
-    }
-  }
+//  function _wget_static_validate_host($element, &$form_state, $form) {
+//    if (!empty($element['#value'])) {
+//      if (preg_match('/http:/', $element['#value']) || preg_match('/ftp:/', $element['#value']) || preg_match('/https:/', $element['#value']) || preg_match('/ftps:/', $element['#value'])) {
+//        form_error($element, t('Please ensure Host field does not contain protocol like http://, https:// or ftp://, ftps://.'));
+//      }
+//      if (preg_match('#/$#', $element['#value'])) {
+//        form_error($element, t('Please ensure Host field does not end with "/"'));
+//      }
+//      if (!@ftp_connect($element['#value']) && $form_state['values']['final'] == 'ftp') {
+//        form_error($element, t('Failed to connect to FTP server'));
+//      }
+//    }
+//    else {
+//      if ($form_state['values']['final'] == 'ftp') {
+//        form_error($element, t('FTP host field is required'));
+//      }
+//    }
+//  }
 
-  /**
+  /**_wget_static_validate_host
    * Validates my element.
    *
    * @param array $element

@@ -15,7 +15,7 @@
 #    _permission: 'wget generate static'
 
 wget_static.page_callback:
-  path: '/wget_static/{form_type}'
+  path: '/wget_static/{form_type}/{arg2}'
   defaults:
     _title: 'Wget Static Generate and Save'
     _form: '\Drupal\wget_static\Form\WgetStaticForm'
