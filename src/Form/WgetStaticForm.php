@@ -29,8 +29,8 @@ class WgetStaticForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, $form_type = NULL, $arg2 = '') {
-    \Drupal::logger('inside build form')->notice($form_type);
+  public function buildForm(array $form, FormStateInterface $form_state, $form_type = NULL) {
+//    \Drupal::logger('inside build form')->notice($form_type);
     $form = array();
 
     $form['wget_static_of'] = array(
@@ -59,7 +59,7 @@ class WgetStaticForm extends FormBase {
         '#description' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_description'),
       );
 
-      \Drupal::logger('before _wget_static_node_contentform')->notice('called'. $form_type);
+//      \Drupal::logger('before _wget_static_node_contentform')->notice('called'. $form_type);
       $wget_static_content_form = '_wget_static_' . $form_type . '_contentform';
       self::$wget_static_content_form($form, $form_state);
     }
@@ -100,7 +100,7 @@ class WgetStaticForm extends FormBase {
 
     $temp_dir = file_directory_temp();
     $timestamp = time();
-    $wget_dir = 'wget/' . $form_state['values']['wget_static_of'] . '/' . $timestamp;
+    $wget_dir = 'wget/' . $form_state->getValues()['wget_static_of'] . '/' . $timestamp;
 
     // Create static html at temporary directory.
     if (!$thi->_wget_static_generate_static_html($temp_dir, $wget_dir, $form_state)) {
@@ -108,9 +108,9 @@ class WgetStaticForm extends FormBase {
       return;
     }
 
-    switch ($form_state['values']['final']) {
+    switch ($form_state->getValues()['final']) {
       case 'download':
-        $download_url = $this->_wget_static_create_archive($temp_dir, $wget_dir, $form_state['values']['download_file'], $timestamp, TRUE);
+        $download_url = $this->_wget_static_create_archive($temp_dir, $wget_dir, $form_state->getValues()['download_file'], $timestamp, TRUE);
         if (!$download_url) {
           file_unmanaged_delete_recursive($temp_dir . "/wget");
           return;
@@ -132,7 +132,7 @@ class WgetStaticForm extends FormBase {
     }
 
     if (\Drupal::state()->get('wget_static_success', 0)) {
-      $form_state['redirect'] = url(\Drupal::state()->get('wget_static_success_redirect', '<front>'), array('absolute' => TRUE));
+      $form_state['redirect'] = Url::fromUri(\Drupal::state()->get('wget_static_success_redirect', '<front>'), array('absolute' => TRUE));
     }
     else {
       $form_state['rebuild'] = TRUE;
@@ -146,7 +146,7 @@ class WgetStaticForm extends FormBase {
    * Constructs Content form for node form type..
    */
   public function _wget_static_node_contentform(array &$form, FormStateInterface $form_state, $query = array()) {
-    \Drupal::logger('_wget_static_node_contentform')->notice('_wget_static_node_contentform');
+//    \Drupal::logger('_wget_static_node_contentform')->notice('_wget_static_node_contentform');
 
     if (!isset($query)) {
       $query = UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), array('page'));
@@ -155,7 +155,7 @@ class WgetStaticForm extends FormBase {
     $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), $query);
     $default = isset($query_params['nid']) ? $query_params['nid'] : NULL;
     $node = self::_wget_static_verify_nid_parameter($default);
-    \Drupal::logger('before form element')->notice('..');
+//    \Drupal::logger('before form element')->notice('..');
     $form['wget_static_content']['content_type'] = array(
       '#type' => 'select',
       '#title' => t('Select Content Type'),
@@ -193,7 +193,7 @@ class WgetStaticForm extends FormBase {
    * Ajax callback for node contentform.
    */
   function wgetStaticNodeContentFormAjax(array &$form, FormStateInterface $form_state) {
-    \Drupal::logger('_wget_static_node_contentform_ajax')->notice('inside ajax');
+//    \Drupal::logger('_wget_static_node_contentform_ajax')->notice('inside ajax');
     $form['wget_static_content']['data']['nid'] = array(
       '#type' => 'select',
       '#title' => t('Select Content'),
@@ -209,7 +209,7 @@ class WgetStaticForm extends FormBase {
    * Function returns array of available content types.
    */
   function _wget_static_getcontenttypes() {
-    \Drupal::logger('my_module - before')->notice('_wget_static_getcontenttypes');
+//    \Drupal::logger('my_module - before')->notice('_wget_static_getcontenttypes');
     $all_content_types = NodeType::loadMultiple();
     $types = array();
     /** @var NodeType $content_type */
@@ -217,7 +217,7 @@ class WgetStaticForm extends FormBase {
       $types[$content_type->get('type')] = $content_type->get('name');
     }
 
-    \Drupal::logger('my_module - after')->notice('_wget_static_getcontenttypes');
+//    \Drupal::logger('my_module - after')->notice('_wget_static_getcontenttypes');
     return $types;
   }
 
@@ -226,7 +226,7 @@ class WgetStaticForm extends FormBase {
    */
   function _wget_static_getcontent($content_type) {
     $node_array = array();
-    \Drupal::logger('my_module')->notice('wget_static_get_content');
+//    \Drupal::logger('my_module')->notice('wget_static_get_content');
 //    print '<pre>'; print_r("wget_static_get_content"); print '</pre>'; exit;
 //    $nids = db_select('node', 'n')
 //      ->fields('n', array('nid'))
@@ -242,7 +242,7 @@ class WgetStaticForm extends FormBase {
 
     foreach ($nids as $n) {
 //      $node = \Drupal::entityManager()->getStorage('node')->load($n);
-      \Drupal::logger('node title')->notice($n->title);
+//      \Drupal::logger('node title')->notice($n->title);
       $node_array[$n->nid] = $n->title;
     }
     return $node_array;
@@ -252,11 +252,11 @@ class WgetStaticForm extends FormBase {
    * Constructs Content form for path form type..
    */
   function _wget_static_path_contentform(array &$form, FormStateInterface $form_state) {
-    \Drupal::logger('my_module')->notice('_wget_static_path_contentform');
+//    \Drupal::logger('my_module')->notice('_wget_static_path_contentform');
 //    print '<pre>'; print_r("_wget_static_path_contentform"); print '</pre>'; exit;
     // Access Query parameters.
     $query_params = UrlHelper::filterQueryParameters();
-    \Drupal::logger('query params')->notice('_wget_static_path_contentform');
+//    \Drupal::logger('query params')->notice('_wget_static_path_contentform');
     $default = isset($query_params['url']) ? $query_params['url'] : NULL;
     $form['wget_static_content']['path'] = array(
       '#type' => 'textfield',
@@ -272,7 +272,7 @@ class WgetStaticForm extends FormBase {
    * Validates Internal Path.
    */
   function wget_static_path_validate($element, FormStateInterface $form_state, $form) {
-    \Drupal::logger('my_module')->notice('wget_static_path_validate');
+//    \Drupal::logger('my_module')->notice('wget_static_path_validate');
     print '<pre>'; print_r("wget_static_path_validate"); print '</pre>';
     if (!(!empty($element['#value']) && \Drupal::service("path.validator")->isValid(\Drupal::service('path.alias_manager')->getPathByAlias($element['#value'])) && !\Drupal\Component\Utility\UrlHelper::isExternal($element['#value']))) {
       $form_state->setError($element, t('Please enter valid internal path.'));
@@ -511,16 +511,16 @@ class WgetStaticForm extends FormBase {
    */
   function _wget_static_verify_nid_parameter($default) {
 
-    \Drupal::logger('_wget_static_verify_nid_parameter')->notice("default".$default);
+//    \Drupal::logger('_wget_static_verify_nid_parameter')->notice("default".$default);
     if (empty($default)) {
       return FALSE;
     }
     if (is_numeric($default)) {
-      \Drupal::logger('inside default')->notice($default);
+//      \Drupal::logger('inside default')->notice($default);
 //      $node = node_load($default);
       $node = Node::load($default);
       if ($node) {
-        \Drupal::logger('my_module - node nid')->notice($node->nid);
+//        \Drupal::logger('my_module - node nid')->notice($node->nid);
         return array(
           'nid' => $node->nid,
           'title' => $node->title,
@@ -749,12 +749,12 @@ class WgetStaticForm extends FormBase {
 //      if (preg_match('#/$#', $element['#value'])) {
 //        form_error($element, t('Please ensure Host field does not end with "/"'));
 //      }
-//      if (!@ftp_connect($element['#value']) && $form_state['values']['final'] == 'ftp') {
+//      if (!@ftp_connect($element['#value']) && $form_state->getValues()['final'] == 'ftp') {
 //        form_error($element, t('Failed to connect to FTP server'));
 //      }
 //    }
 //    else {
-//      if ($form_state['values']['final'] == 'ftp') {
+//      if ($form_state->getValues()['final'] == 'ftp') {
 //        form_error($element, t('FTP host field is required'));
 //      }
 //    }
@@ -779,7 +779,7 @@ class WgetStaticForm extends FormBase {
       if (preg_match('#/$#', $element['#value'])) {
         $form_state->setError($element, t('Please ensure Host field does not end with "/"'));
       }
-      if (!@ftp_connect($element['#value']) && $form_state['values']['final'] == 'ftp') {
+      if (!@ftp_connect($element['#value']) && $form_state->getValues()['final'] == 'ftp') {
         $form_state->setError($element, t('Failed to connect to FTP server'));
       }
     }
@@ -793,16 +793,16 @@ class WgetStaticForm extends FormBase {
   /**
    * Generates static html.
    */
-  function _wget_static_generate_static_html($temp_dir, $wget_dir, $form_state) {
+  function _wget_static_generate_static_html($temp_dir, $wget_dir,FormStateInterface $form_state) {
     $wget_options = $this->_wget_static_build_options($form_state);
-    $wget_url = $this->_wget_static_build_url($form_state['values']);
+    $wget_url = $this->_wget_static_build_url($form_state->getValues());
     $wget_cmd = $this->_wget_static_build_command($wget_options, $wget_url, $temp_dir, $wget_dir);
     file_unmanaged_delete_recursive($temp_dir . "/wget");
     // Check for debug mode.
     if (\Drupal::state()->get('wget_static_enable_wget_log', FALSE)) {
       $log = shell_exec($wget_cmd . " 2>&1");
-      \Drupal::logger('wget_static')->notice('<pre> ' . $log . ' </pre>');
-      \Drupal::logger('wget_static')->notice('wget command built: '. $wget_cmd);
+//      \Drupal::logger('wget_static')->notice('<pre> ' . $log . ' </pre>');
+//      \Drupal::logger('wget_static')->notice('wget command built: '. $wget_cmd);
     }
     else {
       shell_exec($wget_cmd);
@@ -814,91 +814,91 @@ class WgetStaticForm extends FormBase {
   /**
    * Returns array of wget options.
    */
-  function _wget_static_build_options($form_state) {
+  function _wget_static_build_options(FormStateInterface $form_state) {
     $wget = array(
       'no_dir' => array(
-        'use' => ($form_state['values']['create_directory']) ? FALSE : TRUE,
+        'use' => ($form_state->getValues()['create_directory']) ? FALSE : TRUE,
         'cmd' => '-nd',
       ),
       'force_dir' => array(
-        'use' => ($form_state['values']['create_directory']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['create_directory']) ? TRUE : FALSE,
         'cmd' => '-x',
       ),
       'no_host_dir' => array(
-        'use' => ($form_state['values']['no_host_directory']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['no_host_directory']) ? TRUE : FALSE,
         'cmd' => '-nH',
       ),
       'default_page' => array(
-        'use' => ($form_state['values']['default_page']) ? TRUE : FALSE,
-        'cmd' => '--default-page=' . preg_replace("/[^\p{L}\p{N}\.\-\_]/", "", trim($form_state['values']['default_page'])),
+        'use' => ($form_state->getValues()['default_page']) ? TRUE : FALSE,
+        'cmd' => '--default-page=' . preg_replace("/[^\p{L}\p{N}\.\-\_]/", "", trim($form_state->getValues()['default_page'])),
       ),
       'adjust_extension' => array(
-        'use' => ($form_state['values']['adjust_extension']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['adjust_extension']) ? TRUE : FALSE,
         'cmd' => '-E',
       ),
       'nocache' => array(
-        'use' => ($form_state['values']['cache']) ? FALSE : TRUE,
+        'use' => ($form_state->getValues()['cache']) ? FALSE : TRUE,
         'cmd' => '--no-cache',
       ),
       'httpssecureprotocol' => array(
-        'use' => ($form_state['values']['secure_protocol'] == 'auto') ? FALSE : TRUE,
-        'cmd' => '--secure-protocol=' . $form_state['values']['secure_protocol'],
+        'use' => ($form_state->getValues()['secure_protocol'] == 'auto') ? FALSE : TRUE,
+        'cmd' => '--secure-protocol=' . $form_state->getValues()['secure_protocol'],
       ),
       'httpsonly' => array(
-        'use' => ($form_state['values']['httpsonly']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['httpsonly']) ? TRUE : FALSE,
         'cmd' => '--https-only',
       ),
       'recretrieval' => array(
-        'use' => ($form_state['values']['enable']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['enable']) ? TRUE : FALSE,
         'cmd' => '-r',
       ),
       'depthlevel' => array(
-        'use' => (($form_state['values']['enable'] == TRUE) && $form_state['values']['depth'] != '5') ? TRUE : FALSE,
-        'cmd' => '--level=' . $form_state['values']['depth'],
+        'use' => (($form_state->getValues()['enable'] == TRUE) && $form_state->getValues()['depth'] != '5') ? TRUE : FALSE,
+        'cmd' => '--level=' . $form_state->getValues()['depth'],
       ),
       'convertlinks' => array(
-        'use' => ($form_state['values']['convert_links']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['convert_links']) ? TRUE : FALSE,
         'cmd' => '-k',
       ),
       'page_requisites' => array(
-        'use' => ($form_state['values']['page_requisites']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['page_requisites']) ? TRUE : FALSE,
         'cmd' => '-p',
       ),
       'followdomains' => array(
-        'use' => ($form_state['values']['domains'] == 'accept') ? TRUE : FALSE,
-        'cmd' => '--domains=' . preg_replace('/\ /', '', $form_state['values']['domainsaccept']),
+        'use' => ($form_state->getValues()['domains'] == 'accept') ? TRUE : FALSE,
+        'cmd' => '--domains=' . preg_replace('/\ /', '', $form_state->getValues()['domainsaccept']),
       ),
       'excludedomains' => array(
-        'use' => ($form_state['values']['domains'] == 'reject') ? TRUE : FALSE,
-        'cmd' => '--exclude-domains ' . preg_replace('/\ /', '', $form_state['values']['domainsreject']),
+        'use' => ($form_state->getValues()['domains'] == 'reject') ? TRUE : FALSE,
+        'cmd' => '--exclude-domains ' . preg_replace('/\ /', '', $form_state->getValues()['domainsreject']),
       ),
       'followtags' => array(
-        'use' => ($form_state['values']['tags'] == 'accept') ? TRUE : FALSE,
-        'cmd' => '--follow-tags=' . preg_replace('/[^\p{L}\,]/', '', $form_state['values']['tagsaccept']),
+        'use' => ($form_state->getValues()['tags'] == 'accept') ? TRUE : FALSE,
+        'cmd' => '--follow-tags=' . preg_replace('/[^\p{L}\,]/', '', $form_state->getValues()['tagsaccept']),
       ),
       'ignoretags' => array(
-        'use' => ($form_state['values']['tags'] == 'reject') ? TRUE : FALSE,
-        'cmd' => '--ignore-tags=' . preg_replace('/[^\p{L}\,]/', '', $form_state['values']['tagsreject']),
+        'use' => ($form_state->getValues()['tags'] == 'reject') ? TRUE : FALSE,
+        'cmd' => '--ignore-tags=' . preg_replace('/[^\p{L}\,]/', '', $form_state->getValues()['tagsreject']),
       ),
       'acceptfiles' => array(
-        'use' => ($form_state['values']['files'] == 'accept') ? TRUE : FALSE,
-        'cmd' => '-A ' . preg_replace("/[^\p{L}\p{N}\,]/", "", trim($form_state['values']['filesaccept'])),
+        'use' => ($form_state->getValues()['files'] == 'accept') ? TRUE : FALSE,
+        'cmd' => '-A ' . preg_replace("/[^\p{L}\p{N}\,]/", "", trim($form_state->getValues()['filesaccept'])),
       ),
       'rejectlist' => array(
-        'use' => ($form_state['values']['files'] == 'reject') ? TRUE : FALSE,
-        'cmd' => '-A ' . preg_replace("/[^\p{L}\p{N}\,]/", "", trim($form_state['values']['filesreject'])),
+        'use' => ($form_state->getValues()['files'] == 'reject') ? TRUE : FALSE,
+        'cmd' => '-A ' . preg_replace("/[^\p{L}\p{N}\,]/", "", trim($form_state->getValues()['filesreject'])),
       ),
       'followrellinksonly' => array(
-        'use' => ($form_state['values']['relative_links_only']) ? TRUE : FALSE,
+        'use' => ($form_state->getValues()['relative_links_only']) ? TRUE : FALSE,
         'cmd' => '-L',
       ),
       'robotsoff' => array(
-        'use' => ($form_state['values']['robots']) ? FALSE : TRUE,
+        'use' => ($form_state->getValues()['robots']) ? FALSE : TRUE,
         'cmd' => '-e robots=off',
       ),
       'supercmd' => array(
-        'use' => (isset($form_state['values']['supercmd']) && !empty($form_state['values']['supercmd'])) ? TRUE : FALSE,
-        'cmd' => isset($form_state['values']['supercmd']) ? $form_state['values']['supercmd'] : '',
+        'use' => (isset($form_state->getValues()['supercmd']) && !empty($form_state->getValues()['supercmd'])) ? TRUE : FALSE,
+        'cmd' => isset($form_state->getValues()['supercmd']) ? $form_state->getValues()['supercmd'] : '',
       ),
     );
     return $wget;
@@ -951,9 +951,11 @@ class WgetStaticForm extends FormBase {
       return FALSE;
     }
     if ($download) {
-      \Symfony\Component\HttpFoundation\Response->headers->set('Content-disposition', 'attachment; filename=' . $filename);
+      // TODO port
+//      \Symfony\Component\HttpFoundation\Response->headers->set('Content-disposition', 'attachment; filename=' . $filename);
       readfile($filepath);
-      drupal_exit();
+      // TODO port
+//      drupal_exit();
     }
     else {
       return $filepath;
@@ -963,19 +965,19 @@ class WgetStaticForm extends FormBase {
   /**
    * Uses ftp library to upload content on remote ftp server.
    */
-  function _wget_static_ftp($temp_dir, $wget_dir, $form_state, $timestamp) {
+  function _wget_static_ftp($temp_dir, $wget_dir,FormStateInterface $form_state, $timestamp) {
     // *** Include the class.
     include_once 'ftp/ftp_class.php';
 
     // *** Create the FTP object.
     $ftpobj = new WgetStaticFTPClient();
     // *** Connect.
-    if (!$ftpobj->connect($form_state['values']['host'], $form_state['values']['username'], $form_state['values']['password'], TRUE)) {
+    if (!$ftpobj->connect($form_state->getValues()['host'], $form_state->getValues()['username'], $form_state->getValues()['password'], TRUE)) {
       drupal_set_message(t('Failed to connect to FTP server'), 'error', FALSE);
       return FALSE;
     }
     // *** Make fresh directory.
-    $folder = preg_replace("/[^\p{L}\p{N}\-\_]/", "", $form_state['values']['location']);
+    $folder = preg_replace("/[^\p{L}\p{N}\-\_]/", "", $form_state->getValues()['location']);
     if ($folder) {
       if (!$ftpobj->makedir($folder)) {
         drupal_set_message(t('Unable to create directory at the Remote FTP server'), 'error', FALSE);
@@ -983,12 +985,12 @@ class WgetStaticForm extends FormBase {
       }
     }
 
-    if ($form_state['values']['compressed_file']) {
-      $filepath = $this->_wget_static_create_archive($temp_dir, $wget_dir, $form_state['values']['download_file'], $timestamp, FALSE);
+    if ($form_state->getValues()['compressed_file']) {
+      $filepath = $this->_wget_static_create_archive($temp_dir, $wget_dir, $form_state->getValues()['download_file'], $timestamp, FALSE);
       if (!$filepath) {
         return FALSE;
       }
-      $filename = preg_replace('/[^\p{L}\p{N}\-\_]/', '', $form_state['values']['ftp_filename']);
+      $filename = preg_replace('/[^\p{L}\p{N}\-\_]/', '', $form_state->getValues()['ftp_filename']);
       $filename = ($filename) ? $filename : $timestamp;
       if (!$ftpobj->uploadfile($filepath, $folder . '/' . $filename . '.zip')) {
         drupal_set_message(t('Unable to upload compressed at the Remote FTP server'), 'error', FALSE);
@@ -1009,23 +1011,23 @@ class WgetStaticForm extends FormBase {
   /**
    * Uses webdav library to upload content on remote webdav server.
    */
-  function _wget_static_webdav($temp_dir, $wget_dir, $form_state, $timestamp) {
+  function _wget_static_webdav($temp_dir, $wget_dir,FormStateInterface $form_state, $timestamp) {
     // *** Include the class.
     include_once 'webdav/wget_static.webdav.inc';
     $debug_mode = \Drupal::state()->get('wget_static_enable_wget_log', NULL);
     $process = array();
     $cert = "";
-    if ($form_state['values']['webdav_tfa']) {
+    if ($form_state->getValues()['webdav_tfa']) {
       $cert = _wget_static_webdav_cert_cmd($form_state);
     }
 
-    $auth = "--" . $form_state['values']['auth'] . " ";
-    $user = "-u '" . $form_state['values']['username'] . ":" . $form_state['values']['password'] . "' ";
+    $auth = "--" . $form_state->getValues()['auth'] . " ";
+    $user = "-u '" . $form_state->getValues()['username'] . ":" . $form_state->getValues()['password'] . "' ";
     $http_code = "-sw '%{http_code}'";
 
     // *** Make fresh directory for the country.
     // Delete existing folder.
-    $folder = preg_replace("/[^\p{L}\p{N}\-\_]/", "", $form_state['values']['location']);
+    $folder = preg_replace("/[^\p{L}\p{N}\-\_]/", "", $form_state->getValues()['location']);
     $req = _wget_static_webdav_delete_req_cmd($form_state, $folder);
     $process['delete']['cmd'] = "curl " . $cert . $user . $req . $auth . $http_code;
     $process['delete']['response'] = shell_exec($process['delete']['cmd']);
@@ -1060,14 +1062,14 @@ class WgetStaticForm extends FormBase {
     }
 
     // *** Upload static content on remote server.
-    if ($form_state['values']['compressed_file']) {
-      $filepath = $this->_wget_static_create_archive($temp_dir, $wget_dir, $form_state['values']['download_file'], $timestamp, FALSE);
+    if ($form_state->getValues()['compressed_file']) {
+      $filepath = $this->_wget_static_create_archive($temp_dir, $wget_dir, $form_state->getValues()['download_file'], $timestamp, FALSE);
       if (!$filepath) {
         return FALSE;
       }
-      $filename = preg_replace('/[^\p{L}\p{N}\-\_]/', '', $form_state['values']['webdav_filename']);
+      $filename = preg_replace('/[^\p{L}\p{N}\-\_]/', '', $form_state->getValues()['webdav_filename']);
       $filename = ($filename) ? $filename : $timestamp;
-      $des = $form_state['values']['protocol'] . "://" . $form_state['values']['host'] . "/" . $folder;
+      $des = $form_state->getValues()['protocol'] . "://" . $form_state->getValues()['host'] . "/" . $folder;
       $req = _wget_static_webdav_upload_file_cmd($filepath, $des, $filename . '.zip');
       $process['upload']['cmd'] = "curl " . $cert . $user . $req . $auth . $http_code;
       $process['upload']['response'] = shell_exec($process['upload']['cmd']);
@@ -1085,7 +1087,7 @@ class WgetStaticForm extends FormBase {
       while ($file = $d->read()) {
         // To prevent an infinite loop.
         if ($file != "." && $file != "..") {
-          $des = $form_state['values']['protocol'] . "://" . $form_state['values']['host'] . "/" . $folder;
+          $des = $form_state->getValues()['protocol'] . "://" . $form_state->getValues()['host'] . "/" . $folder;
           $req = _wget_static_webdav_upload_content_cmd($temp_dir . "/" . $wget_dir, $des, $file);
           $process['upload']['cmd'] = "curl " . $cert . $user . $req . $auth . $http_code;
           $process['upload']['response'] = shell_exec($process['upload']['cmd']);
