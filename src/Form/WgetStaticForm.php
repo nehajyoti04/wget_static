@@ -9,7 +9,9 @@ use Drupal\node\Entity\NodeType;
 use Drupal\node\NodeTypeInterface;
 use Drupal\wget_static\WgetStaticFTPClient;
 use Drupal\wget_static\WgetStaticRecursiveZip;
+use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Class AddForm.
@@ -103,7 +105,7 @@ class WgetStaticForm extends FormBase {
     $wget_dir = 'wget/' . $form_state->getValues()['wget_static_of'] . '/' . $timestamp;
 
     // Create static html at temporary directory.
-    if (!$thi->_wget_static_generate_static_html($temp_dir, $wget_dir, $form_state)) {
+    if (!$this->_wget_static_generate_static_html($temp_dir, $wget_dir, $form_state)) {
       drupal_set_message(t('Error creating temporary static html.'), 'error', FALSE);
       return;
     }
@@ -908,9 +910,15 @@ class WgetStaticForm extends FormBase {
    * Builds wget url.
    */
   function _wget_static_build_url($values) {
+
     switch ($values['wget_static_of']) {
       case 'node':
-        return Url::fromUri('node/' . $values['nid'], array('absolute' => TRUE));
+        if (isset($values['nid'])) {
+          return Url::fromUri('base:/node/' . $values['nid'], array('absolute' => TRUE))->toString();
+        } else {
+          return Url::fromUri('base:/node', array('absolute' => TRUE))->toString();
+        }
+
 
       case 'path':
         return Url::fromUri($values['path'], array('absolute' => TRUE));
@@ -940,34 +948,79 @@ class WgetStaticForm extends FormBase {
 * Generates zip archive.
 */
   function _wget_static_create_archive($temp_dir, $wget_dir, $filename, $timestamp, $download = FALSE) {
-    // Load class.
-    include_once "zip/recursiveZip.php";
+    \Drupal::logger('_wget_static_create_archive')->notice($filename);
+    \Drupal::logger('temp dir')->notice($temp_dir);
+    \Drupal::logger('wget_dir')->notice($wget_dir);
+    dpm("temp dir");
+    dpm($temp_dir);
+    dpm("wget dir");
+    dpm($wget_dir);
     $zip = new WgetStaticRecursiveZip();
     $filename = preg_replace('/[^\p{L}\p{N}\-\_]/', '', $filename);
     $filename = ($filename) ? $filename . '.zip' : $timestamp . '.zip';
     $filepath = $zip->compress($temp_dir . "/" . $wget_dir, $temp_dir . "/wget/", $filename);
+    dpm("file path");
+    dpm($filepath);
     if (!$filepath) {
+      dpm("inside not file");
       drupal_set_message(t('Unable to compress'), 'error', FALSE);
       return FALSE;
     }
     if ($download) {
+
+      dpm("file name");
+      dpm($filename);
       // TODO port
 //      \Symfony\Component\HttpFoundation\Response->headers->set('Content-disposition', 'attachment; filename=' . $filename);
-      readfile($filepath);
-      // TODO port
-//      drupal_exit();
+//     $filename->headers->set('Content-disposition', 'attachment; filename=' . $filename);
+
+
+
+//      $response = $event->getResponse();
+//      $response->headers->set('Content-disposition', 'attachment; filename=' . $filename);
+
+//      $events[KernelEvents::RESPONSE][] = $response;
+
+//      return $events;
+//      $filename['http_header'] = ['Content-disposition', 'attachment; filename=' . $filename];
+      header('Content-Description: File Transfer');
+      header('Content-Type: application/force-download');
+      header("Content-disposition', 'attachment; filename=\"" . basename($filename) . "\";");
+      header('Content-Transfer-Encoding: binary');
+      header('Expires: 0');
+      header('Cache-Control: must-revalidate');
+      header('Pragma: public');
+      header('Content-Length: ' . filesize($filename));
+      ob_clean();
+      flush();
+      readfile($filename);
+      exit;
+
+//      readfile($filepath);
+//      // TODO port
+//     drupal_exit();
     }
     else {
       return $filepath;
     }
   }
 
+  public function onRespond(FilterResponseEvent $event) {
+    $response = $event->getResponse();
+    $response->headers->set('Some-Header', 'some value');
+  }
+
+//  public static function getSubscribedEvents() {
+//    $events[KernelEvents::RESPONSE][] = array('onRespond');
+//    return $events;
+//  }
+
   /**
    * Uses ftp library to upload content on remote ftp server.
    */
   function _wget_static_ftp($temp_dir, $wget_dir,FormStateInterface $form_state, $timestamp) {
     // *** Include the class.
-    include_once 'ftp/ftp_class.php';
+//    include_once 'ftp/ftp_class.php';
 
     // *** Create the FTP object.
     $ftpobj = new WgetStaticFTPClient();

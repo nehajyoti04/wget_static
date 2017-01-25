@@ -1,5 +1,6 @@
 <?php
 namespace Drupal\wget_static;
+use ZipArchive;
 
 /**
  * Recursivezip class.

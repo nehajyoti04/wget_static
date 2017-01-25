@@ -4,6 +4,7 @@
  * FTP class.
  */
 
+namespace Drupal\wget_static;
 /**
  * FTP Client Class.
  */

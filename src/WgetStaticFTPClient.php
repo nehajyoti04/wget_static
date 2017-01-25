@@ -50,7 +50,7 @@ class WgetStaticFTPClient {
     // *** Check connection.
     if ((!$this->connectionid) || (!$loginresult)) {
       $this->logmessage('FTP connection has failed!');
-      $this->logmessage('Attempted to connect to ' . $server . ' for user ' . $ftpuser, TRUE);
+      $this->logmessage('Attempted to connect to ' . $server . ' for user ' . $ftpuser);
       return FALSE;
     }
     else {
@@ -134,7 +134,7 @@ class WgetStaticFTPClient {
             ftp_mkdir($conn_id, $dst_dir . "/" . $file);
           }
           // Recursive part.
-          ftpputall($conn_id, $src_dir . "/" . $file, $dst_dir . "/" . $file);
+          self::ftpputall($conn_id, $src_dir . "/" . $file, $dst_dir . "/" . $file);
         }
         else {
           // Put the files.
