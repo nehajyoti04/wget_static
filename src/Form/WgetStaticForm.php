@@ -32,7 +32,7 @@ class WgetStaticForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $form_type = NULL) {
-//    \Drupal::logger('inside build form')->notice($form_type);
+
     $form = array();
 
     $form['wget_static_of'] = array(
@@ -61,7 +61,6 @@ class WgetStaticForm extends FormBase {
         '#description' => \Drupal::config('wget_static.settings')->get('wget_static_content_tab_description'),
       );
 
-//      \Drupal::logger('before _wget_static_node_contentform')->notice('called'. $form_type);
       $wget_static_content_form = '_wget_static_' . $form_type . '_contentform';
       self::$wget_static_content_form($form, $form_state);
     }
@@ -148,7 +147,6 @@ class WgetStaticForm extends FormBase {
    * Constructs Content form for node form type..
    */
   public function _wget_static_node_contentform(array &$form, FormStateInterface $form_state, $query = array()) {
-//    \Drupal::logger('_wget_static_node_contentform')->notice('_wget_static_node_contentform');
 
     if (!isset($query)) {
       $query = UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), array('page'));
@@ -157,7 +155,6 @@ class WgetStaticForm extends FormBase {
     $query_params = \Drupal\Component\Utility\UrlHelper::filterQueryParameters(\Drupal::request()->query->all(), $query);
     $default = isset($query_params['nid']) ? $query_params['nid'] : NULL;
     $node = self::_wget_static_verify_nid_parameter($default);
-//    \Drupal::logger('before form element')->notice('..');
     $form['wget_static_content']['content_type'] = array(
       '#type' => 'select',
       '#title' => t('Select Content Type'),
@@ -195,7 +192,6 @@ class WgetStaticForm extends FormBase {
    * Ajax callback for node contentform.
    */
   function wgetStaticNodeContentFormAjax(array &$form, FormStateInterface $form_state) {
-//    \Drupal::logger('_wget_static_node_contentform_ajax')->notice('inside ajax');
     $form['wget_static_content']['data']['nid'] = array(
       '#type' => 'select',
       '#title' => t('Select Content'),
@@ -211,7 +207,6 @@ class WgetStaticForm extends FormBase {
    * Function returns array of available content types.
    */
   function _wget_static_getcontenttypes() {
-//    \Drupal::logger('my_module - before')->notice('_wget_static_getcontenttypes');
     $all_content_types = NodeType::loadMultiple();
     $types = array();
     /** @var NodeType $content_type */
@@ -219,7 +214,6 @@ class WgetStaticForm extends FormBase {
       $types[$content_type->get('type')] = $content_type->get('name');
     }
 
-//    \Drupal::logger('my_module - after')->notice('_wget_static_getcontenttypes');
     return $types;
   }
 
@@ -228,7 +222,6 @@ class WgetStaticForm extends FormBase {
    */
   function _wget_static_getcontent($content_type) {
     $node_array = array();
-//    \Drupal::logger('my_module')->notice('wget_static_get_content');
 //    print '<pre>'; print_r("wget_static_get_content"); print '</pre>'; exit;
 //    $nids = db_select('node', 'n')
 //      ->fields('n', array('nid'))
@@ -244,7 +237,6 @@ class WgetStaticForm extends FormBase {
 
     foreach ($nids as $n) {
 //      $node = \Drupal::entityManager()->getStorage('node')->load($n);
-//      \Drupal::logger('node title')->notice($n->title);
       $node_array[$n->nid] = $n->title;
     }
     return $node_array;
@@ -254,11 +246,9 @@ class WgetStaticForm extends FormBase {
    * Constructs Content form for path form type..
    */
   function _wget_static_path_contentform(array &$form, FormStateInterface $form_state) {
-//    \Drupal::logger('my_module')->notice('_wget_static_path_contentform');
 //    print '<pre>'; print_r("_wget_static_path_contentform"); print '</pre>'; exit;
     // Access Query parameters.
     $query_params = UrlHelper::filterQueryParameters();
-//    \Drupal::logger('query params')->notice('_wget_static_path_contentform');
     $default = isset($query_params['url']) ? $query_params['url'] : NULL;
     $form['wget_static_content']['path'] = array(
       '#type' => 'textfield',
@@ -274,7 +264,6 @@ class WgetStaticForm extends FormBase {
    * Validates Internal Path.
    */
   function wget_static_path_validate($element, FormStateInterface $form_state, $form) {
-//    \Drupal::logger('my_module')->notice('wget_static_path_validate');
     print '<pre>'; print_r("wget_static_path_validate"); print '</pre>';
     if (!(!empty($element['#value']) && \Drupal::service("path.validator")->isValid(\Drupal::service('path.alias_manager')->getPathByAlias($element['#value'])) && !\Drupal\Component\Utility\UrlHelper::isExternal($element['#value']))) {
       $form_state->setError($element, t('Please enter valid internal path.'));
@@ -513,16 +502,13 @@ class WgetStaticForm extends FormBase {
    */
   function _wget_static_verify_nid_parameter($default) {
 
-//    \Drupal::logger('_wget_static_verify_nid_parameter')->notice("default".$default);
     if (empty($default)) {
       return FALSE;
     }
     if (is_numeric($default)) {
-//      \Drupal::logger('inside default')->notice($default);
 //      $node = node_load($default);
       $node = Node::load($default);
       if ($node) {
-//        \Drupal::logger('my_module - node nid')->notice($node->nid);
         return array(
           'nid' => $node->nid,
           'title' => $node->title,
@@ -803,8 +789,6 @@ class WgetStaticForm extends FormBase {
     // Check for debug mode.
     if (\Drupal::state()->get('wget_static_enable_wget_log', FALSE)) {
       $log = shell_exec($wget_cmd . " 2>&1");
-//      \Drupal::logger('wget_static')->notice('<pre> ' . $log . ' </pre>');
-//      \Drupal::logger('wget_static')->notice('wget command built: '. $wget_cmd);
     }
     else {
       shell_exec($wget_cmd);
