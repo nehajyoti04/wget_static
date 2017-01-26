@@ -970,6 +970,8 @@ class WgetStaticForm extends FormBase {
 
       dpm("file name");
       dpm($filename);
+      dpm("base name");
+      dpm(basename($filename));
       // TODO port
 //      \Symfony\Component\HttpFoundation\Response->headers->set('Content-disposition', 'attachment; filename=' . $filename);
 //     $filename->headers->set('Content-disposition', 'attachment; filename=' . $filename);
@@ -983,17 +985,19 @@ class WgetStaticForm extends FormBase {
 
 //      return $events;
 //      $filename['http_header'] = ['Content-disposition', 'attachment; filename=' . $filename];
-      header('Content-Description: File Transfer');
+//      header('Content-Description: File Transfer');
       header('Content-Type: application/force-download');
-      header("Content-disposition', 'attachment; filename=\"" . basename($filename) . "\";");
-      header('Content-Transfer-Encoding: binary');
-      header('Expires: 0');
-      header('Cache-Control: must-revalidate');
-      header('Pragma: public');
-      header('Content-Length: ' . filesize($filename));
-      ob_clean();
-      flush();
-      readfile($filename);
+      header('Content-Disposition: inline; filename='.basename($filename));
+//      header('Content-disposition', 'attachment; filename=' . $filename);
+//      header("Content-disposition', 'attachment; filename=\"" . basename($filename) . "\";");
+//      header('Content-Transfer-Encoding: binary');
+//      header('Expires: 0');
+//      header('Cache-Control: must-revalidate');
+//      header('Pragma: public');
+//      header('Content-Length: ' . filesize($filename));
+//      ob_clean();
+//      flush();
+      readfile($filepath);
       exit;
 
 //      readfile($filepath);
