@@ -948,76 +948,29 @@ class WgetStaticForm extends FormBase {
 * Generates zip archive.
 */
   function _wget_static_create_archive($temp_dir, $wget_dir, $filename, $timestamp, $download = FALSE) {
-    \Drupal::logger('_wget_static_create_archive')->notice($filename);
-    \Drupal::logger('temp dir')->notice($temp_dir);
-    \Drupal::logger('wget_dir')->notice($wget_dir);
-    dpm("temp dir");
-    dpm($temp_dir);
-    dpm("wget dir");
-    dpm($wget_dir);
+
     $zip = new WgetStaticRecursiveZip();
     $filename = preg_replace('/[^\p{L}\p{N}\-\_]/', '', $filename);
     $filename = ($filename) ? $filename . '.zip' : $timestamp . '.zip';
     $filepath = $zip->compress($temp_dir . "/" . $wget_dir, $temp_dir . "/wget/", $filename);
-    dpm("file path");
-    dpm($filepath);
+
     if (!$filepath) {
-      dpm("inside not file");
       drupal_set_message(t('Unable to compress'), 'error', FALSE);
       return FALSE;
     }
     if ($download) {
-
-      dpm("file name");
-      dpm($filename);
-      dpm("base name");
-      dpm(basename($filename));
       // TODO port
-//      \Symfony\Component\HttpFoundation\Response->headers->set('Content-disposition', 'attachment; filename=' . $filename);
-//     $filename->headers->set('Content-disposition', 'attachment; filename=' . $filename);
 
-
-
-//      $response = $event->getResponse();
-//      $response->headers->set('Content-disposition', 'attachment; filename=' . $filename);
-
-//      $events[KernelEvents::RESPONSE][] = $response;
-
-//      return $events;
-//      $filename['http_header'] = ['Content-disposition', 'attachment; filename=' . $filename];
-//      header('Content-Description: File Transfer');
       header('Content-Type: application/force-download');
       header('Content-Disposition: inline; filename='.basename($filename));
-//      header('Content-disposition', 'attachment; filename=' . $filename);
-//      header("Content-disposition', 'attachment; filename=\"" . basename($filename) . "\";");
-//      header('Content-Transfer-Encoding: binary');
-//      header('Expires: 0');
-//      header('Cache-Control: must-revalidate');
-//      header('Pragma: public');
-//      header('Content-Length: ' . filesize($filename));
-//      ob_clean();
-//      flush();
+
       readfile($filepath);
       exit;
-
-//      readfile($filepath);
-//      // TODO port
-//     drupal_exit();
     }
     else {
       return $filepath;
     }
   }
-
-  public function onRespond(FilterResponseEvent $event) {
-    $response = $event->getResponse();
-    $response->headers->set('Some-Header', 'some value');
-  }
-
-//  public static function getSubscribedEvents() {
-//    $events[KernelEvents::RESPONSE][] = array('onRespond');
-//    return $events;
-//  }
 
   /**
    * Uses ftp library to upload content on remote ftp server.
