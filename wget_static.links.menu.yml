@@ -9,8 +9,3 @@ wget_static.config_form:
   route_name: wget_static.config_form
   parent: 'wget_static.admin_config_wget_static'
   menu_name: wget_static
-
-#wget_static.page_callback:
-#  route_name: wget_static.page_callback
-#  title: 'Wget Static Generate and Save'
-#  description: 'Wget Static data generation and save form.'

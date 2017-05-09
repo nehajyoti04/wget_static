@@ -722,28 +722,6 @@ class WgetStaticForm extends FormBase {
     );
   }
 
-  /**
-   * Validates FTP host name.
-   */
-//  function _wget_static_validate_host($element, &$form_state, $form) {
-//    if (!empty($element['#value'])) {
-//      if (preg_match('/http:/', $element['#value']) || preg_match('/ftp:/', $element['#value']) || preg_match('/https:/', $element['#value']) || preg_match('/ftps:/', $element['#value'])) {
-//        form_error($element, t('Please ensure Host field does not contain protocol like http://, https:// or ftp://, ftps://.'));
-//      }
-//      if (preg_match('#/$#', $element['#value'])) {
-//        form_error($element, t('Please ensure Host field does not end with "/"'));
-//      }
-//      if (!@ftp_connect($element['#value']) && $form_state->getValues()['final'] == 'ftp') {
-//        form_error($element, t('Failed to connect to FTP server'));
-//      }
-//    }
-//    else {
-//      if ($form_state->getValues()['final'] == 'ftp') {
-//        form_error($element, t('FTP host field is required'));
-//      }
-//    }
-//  }
-
   /**_wget_static_validate_host
    * Validates my element.
    *
